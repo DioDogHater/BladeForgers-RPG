@@ -1,4 +1,4 @@
-#-- About this project --
+# About this project
 I am making this project as a way to test my game making abilities while also wasting time as a no-life.
 
 # Why the hell is it in C?
