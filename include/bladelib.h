@@ -1,3 +1,8 @@
+// LIBRARY PROGRAMMED BY DIODOGHATER
+// Github: github.com/DioDogHater
+// ANYONE TRYING TO COPY MY CODE SHALT BE DECLARED AS A STEALING LOSER
+// GET A BRAIN DUMBASS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

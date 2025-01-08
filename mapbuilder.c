@@ -1,3 +1,8 @@
+// SOURCE CODE PROGRAMMED BY DIODOGHATER
+// Github: github.com/DioDogHater
+// ANYONE TRYING TO COPY MY CODE SHALT BE DECLARED AS A STEALING LOSER
+// GET A BRAIN DUMBASS
+
 #include "include/bladelib.h"
 #include <string.h>
 
