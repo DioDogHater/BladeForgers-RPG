@@ -1,1 +1,4 @@
+#ignore all batch files (building should be made with your own commands)
 *.bat
+#ignore the test map (its just gonna take extra space)
+maps/test.bin

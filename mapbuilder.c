@@ -122,14 +122,18 @@ int main(int argv, char* args[]){
 						printf("\nCreated new chunk with position: %d, %d\n",chunkX,chunkY);
 						break;
 					}case SDLK_z:{
-						// make a saving system (just open the file mentioned in the start and write the map)
 						printf("\n--- SAVING MAP ---\nFILE %s WILL BE OVERWRITTEN!\n",file_path);
 						FILE* F_ptr = fopen(real_file_path,"wb");
 						if(F_ptr == NULL) printf("Failed to write in file %s\n",real_file_path);
 						else{F_writeMap(F_ptr,&curr_map); printf("SUCCESSFULLY SAVED MAP!\n");}
 						fclose(F_ptr);
 						break;
-					}
+					}case SDLK_f:
+						layer_selection++;
+						if(layer_selection > 1) layer_selection=0;
+						curr_select=0;
+						printf("Switching asset type to %d\n",layer_selection);
+						break;
 				}break;
 			case SDL_KEYUP:
 				switch(event.key.keysym.sym){
@@ -150,20 +154,31 @@ int main(int argv, char* args[]){
 				//printf("mouse button: %d at: %d, %d\n",event.button.button,event.button.x,event.button.y);
 				if(event.button.button == 1){
 					if(event.button.x >= 800){
-						int8_t gridX=(event.button.x-800)/40, gridY=(event.button.y-scroll_offset)/40;
-						if(gridX >= 0 && gridX < 5 && gridY >= 0 && gridY < MAP_STONE_FLOOR_END/5+1){
-							uint8_t asset_index=gridY*5+gridX;
-							if(asset_index<MAP_STONE_FLOOR_END) curr_select = asset_index;
+						if(layer_selection == 0){
+							int8_t gridX=(event.button.x-800)/40, gridY=(event.button.y-scroll_offset)/40;
+							if(gridX >= 0 && gridX < 5 && gridY >= 0 && gridY*5+gridX < MAP_STONE_FLOOR_END){
+								uint8_t asset_index=gridY*5+gridX;
+								curr_select = asset_index;
+							}
+						}else if(layer_selection == 1){
+							int8_t gridX=(event.button.x-800)/100, gridY=(event.button.y-scroll_offset)/100;
+							if(gridX >= 0 && gridX < 2 && gridY >= 0 && gridY*2+gridX < MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_select=(uint8_t)(gridY*2+gridX);
+							else if(gridY*2+gridX == MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_select=MAP_ASSET_COUNT-MAP_STONE_FLOOR_END;
 						}
 					}else{
 						Vector2 global_mspos = Camera_getGlobalMousePos(&cam,(Vec2){event.button.x,event.button.y});
-						int gridX=(int)floor((double)global_mspos.x/(double)GRID_SIZE)+8, gridY=(int)floor((double)(global_mspos.y+GRID_SIZE)/(double)GRID_SIZE)+8;
+						int gridX=(int)floor((double)global_mspos.x/(double)GRID_SIZE)+8, gridY=(int)floor((double)(global_mspos.y)/(double)GRID_SIZE)+8;
 						int chunkX=(int)floor((double)gridX/16.0d), chunkY=(int)floor((double)gridY/16.0d);
 						int mapIndex = Map_getChunk(&curr_map,chunkX,chunkY);
 						if(mapIndex != -1){
 							gridX-=chunkX*16; gridY-=chunkY*16;
 							uint8_t chunk_index=gridY*16+gridX;
-							curr_map.chunks[mapIndex].bg[chunk_index]=curr_select;
+							if(layer_selection == 0){
+								curr_map.chunks[mapIndex].bg[chunk_index]=curr_select;
+							}else if(layer_selection == 1){
+								if(curr_select == MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_map.chunks[mapIndex].blocks[chunk_index]=MAP_NULL;
+								else curr_map.chunks[mapIndex].blocks[chunk_index]=curr_select;
+							}
 						}
 					}
 				}else if(event.button.button == 2) dragging_mouse=true;
@@ -205,6 +220,13 @@ int main(int argv, char* args[]){
 				r=(SDL_Rect){800+(i%5)*40,i/5*40+scroll_offset,40,40};
 				Asset_render(&win,map_assets[i],r);
 				if(i == curr_select){Window_setColor(&win,(SDL_Color){255,0,0,255});SDL_RenderDrawRect(win.renderer,&r);}
+			}
+		}else if(layer_selection == 1){
+			for(int i=MAP_STONE_FLOOR_END;i<=MAP_ASSET_COUNT;i++){
+				r=(SDL_Rect){800+((i-MAP_STONE_FLOOR_END)%2)*100,(i-MAP_STONE_FLOOR_END)/2*100+scroll_offset,100,100};
+				if(i < MAP_ASSET_COUNT){
+					Asset_render(&win,map_assets[i],r);
+				}if(i-MAP_STONE_FLOOR_END == curr_select){Window_setColor(&win,(SDL_Color){255,0,0,255});SDL_RenderDrawRect(win.renderer,&r);}
 			}
 		}
 		

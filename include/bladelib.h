@@ -237,10 +237,25 @@ void Camera_render(Camera* cam, Map* map, Asset* assets){
 			int x=chunkX+u%16-8, y=chunkY+u/16-8;
 			SDL_Rect r = (SDL_Rect){
 				x*GRID_SIZE+cam->win->hsize.x-(int)cam->pos.x,
-				y*GRID_SIZE+cam->win->hsize.y-GRID_SIZE*(assets[map->chunks[i].bg[u]].clip.h/32)-(int)cam->pos.y,
-				GRID_SIZE*(assets[map->chunks[i].bg[u]].clip.w/32), GRID_SIZE*(assets[map->chunks[i].bg[u]].clip.h/32)
+				y*GRID_SIZE+cam->win->hsize.y-(int)cam->pos.y/*-GRID_SIZE*(assets[map->chunks[i].bg[u]].clip.h/32)*/,
+				GRID_SIZE/* *(assets[map->chunks[i].bg[u]].clip.w/32)*/, GRID_SIZE/* *(assets[map->chunks[i].bg[u]].clip.h/32)*/
 			};
 			Asset_render(cam->win,assets[map->chunks[i].bg[u]],r);
+		}
+	}
+	for(int i=0; i<map->chunkSize; i++){
+		int chunkX=map->chunks[i].x*16, chunkY=map->chunks[i].y*16;
+		if(Vector2_distance_square(cam->pos,(Vector2){(float)chunkX*GRID_SIZE,(float)chunkY*GRID_SIZE}) >= square((float)cam->win->size.x*1.5f)) continue;
+		for(int u=0; u<256; u++){
+			if(map->chunks[i].blocks[u] == MAP_NULL) continue;
+			int x=chunkX+u%16-8, y=chunkY+u/16-8;
+			Asset block_asset = assets[map->chunks[i].blocks[u]+MAP_STONE_FLOOR_END];
+			SDL_Rect r = (SDL_Rect){
+				x*GRID_SIZE+cam->win->hsize.x-(int)cam->pos.x,
+				y*GRID_SIZE+cam->win->hsize.y-GRID_SIZE*(block_asset.clip.h/32-1)-(int)cam->pos.y,
+				GRID_SIZE*(block_asset.clip.w/32), GRID_SIZE*(block_asset.clip.h/32)
+			};
+			Asset_render(cam->win,block_asset,r);
 		}
 	}
 }
@@ -288,6 +303,14 @@ int Map_getChunk(Map* map, int8_t x, int8_t y){
 	return -1;
 }
 // ---
+const uint8_t COLL_FULL=0,COLL_LEFT=1,COLL_RIGHT=2,COLL_UP=3,COLL_DOWN=4,COLL_LEFT_UP=5,COLL_RIGHT_UP=6,COLL_LEFT_DOWN=7,COLL_RIGHT_DOWN=8;
+const SDL_Rect collShapes[9]={
+(SDL_Rect){0,0,GRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,GRID_SIZE},
+(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,GRID_SIZE,HGRID_SIZE},
+(SDL_Rect){0,HGRID_SIZE,GRID_SIZE,HGRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,HGRID_SIZE},
+(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,HGRID_SIZE},(SDL_Rect){0,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE},
+(SDL_Rect){HGRID_SIZE,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE}
+};
 
 // Other universal utilities
 void loadMapAssets(Window* win,
