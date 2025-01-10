@@ -91,6 +91,7 @@ int main(int argv, char* args[]){
 	Camera cam = {&win, (Vector2){0,0}};
 	Vector2 plVel = (Vector2){0.0f,0.0f};
 	SDL_RendererFlip plFlip = SDL_FLIP_NONE;
+	int k_left=0, k_right=0, k_up=0, k_down=0;
 	
 	loadMedia();
 	
@@ -122,39 +123,42 @@ int main(int argv, char* args[]){
 			else if(event.type == SDL_KEYDOWN){
 				switch(event.key.keysym.sym){
 					case SDLK_w:
-						plVel.y = -1.0f;
+						k_up=1;
 						break;
 					case SDLK_s:
-						plVel.y = 1.0f;
+						k_down=1;
 						break;
 					case SDLK_a:
-						plVel.x = -1.0f;
+						k_left=1;
 						if(!player_swinging) plFlip = SDL_FLIP_HORIZONTAL;
 						break;
 					case SDLK_d:
-						plVel.x = 1.0f;
+						k_right=1;
 						if(!player_swinging) plFlip = SDL_FLIP_NONE;
 						break;
 				}
 			}else if(event.type == SDL_KEYUP){
 				switch(event.key.keysym.sym){
 					case SDLK_w:
-						if(plVel.y < 0) plVel.y = 0;
+						k_up=0;
 						break;
 					case SDLK_s:
-						if(plVel.y > 0) plVel.y = 0;
+						k_down=0;
 						break;
 					case SDLK_a:
-						if(plVel.x < 0) plVel.x = 0;
+						k_left=0;
 						break;
 					case SDLK_d:
-						if(plVel.x > 0) plVel.x = 0;
+						k_right=0;
 						break;
 				}
 			}else if(event.type == SDL_MOUSEBUTTONDOWN){
 				if(!player_swinging)player_swinging=true;
 			}
 		}
+		
+		plVel.x = k_right-k_left;
+		plVel.y = k_down-k_up;
 		
 		// Update animations if necessary
 		if(A_player_curr_anim == &A_player_swing && A_player_swing.currFrame == 5){
@@ -170,8 +174,19 @@ int main(int argv, char* args[]){
 		Window_clear(&win);
 		
 		// Move and render camera
-		cam.pos = addVector2(cam.pos,scaleVector2(Vector2_normalized(plVel),(float)deltaTime*(player_swinging ? 0.05f:0.21f)));
+		Vector2 plVel_nm=scaleVector2(Vector2_normalized(plVel),(float)deltaTime*(player_swinging ? 0.05f:0.21f));
+		cam.pos.x += plVel_nm.x;
+		Vector2 pl_coll_pos=(Vector2){8.0f*(float)GRID_SIZE,8.0f*(float)GRID_SIZE+(float)HGRID_SIZE*0.35f};
+		Vector2 pl_coll_size=(Vector2){(float)HGRID_SIZE*1.1f,(float)HGRID_SIZE};
+		bool colliding=Coll_check_rect(addVector2(cam.pos,pl_coll_pos),pl_coll_size,&mainmap);
+		if(colliding) cam.pos.x -= plVel_nm.x;
+		cam.pos.y += plVel_nm.y;
+		colliding=Coll_check_rect(addVector2(cam.pos,pl_coll_pos),pl_coll_size,&mainmap);
+		if(colliding) cam.pos.y -= plVel_nm.y;
 		Camera_render(&cam,&mainmap,map_assets);
+		
+		// Render colliders as a debug feature
+		Camera_render_debug_colls(&cam,&mainmap);
 		
 		// Render player
 		Texture_render(&win,&T_shadow,(SDL_Rect){win.hsize.x-(int)((float)HGRID_SIZE*0.75f),win.hsize.y-(int)((float)HGRID_SIZE*0.4f),(int)((float)GRID_SIZE*0.75f),(int)((float)GRID_SIZE*0.75f)});
@@ -181,6 +196,11 @@ int main(int argv, char* args[]){
 			plFlip
 		);
 		Text_render_scaled(&win,&TXT_fpsCounter,(Vec2){0,0},(Vector2){1.0f,1.0f});
+		
+		// Render the player's collider
+		SDL_Rect r=(SDL_Rect){win.hsize.x-(int)(pl_coll_size.x/2.0f),win.hsize.y-(int)(pl_coll_size.y/2.0f-(pl_coll_pos.y-GRID_SIZE*8)),(int)pl_coll_size.x,(int)pl_coll_size.y};
+		Window_setColor(&win,(SDL_Color){255,255,255,255});
+		SDL_RenderDrawRect(win.renderer,&r);
 		
 		// Update the current window display (Show everything rendered)
 		Window_update(&win);

@@ -84,12 +84,15 @@ typedef struct {
 	Asset* frames;
 }Animation;
 
-// HERE IS HOW THE FILE HANDLING WORKS -> we use .bin (binary files)
-// Writing:
-// 	We parse through every map chunk then write that struct in the file
-// Reading: 
-// 	We parse through singular map chunks until we reach the end of the file (by getting the size of the file with fseek and ftell)
-// ----
+// Collision Constants
+const uint8_t COLL_FULL=1,COLL_LEFT=2,COLL_RIGHT=3,COLL_UP=4,COLL_DOWN=5,COLL_LEFT_UP=6,COLL_RIGHT_UP=7,COLL_LEFT_DOWN=8,COLL_RIGHT_DOWN=9;
+const SDL_Rect coll_shapes[9]={
+	(SDL_Rect){0,0,GRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,GRID_SIZE},
+	(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,GRID_SIZE,HGRID_SIZE},
+	(SDL_Rect){0,HGRID_SIZE,GRID_SIZE,HGRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,HGRID_SIZE},
+	(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,HGRID_SIZE},(SDL_Rect){0,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE},
+	(SDL_Rect){HGRID_SIZE,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE}
+};
 
 // Math functions
 #define square(x) (x)*(x)
@@ -142,6 +145,7 @@ bool Window_init(Window* window, char* caption, Vec2 size, Uint32 flags){
 		printf("Renderer creation error: %s\n",SDL_GetError());
 		return false;
 	}window->renderer = nrend;
+	SDL_SetRenderDrawBlendMode(window->renderer, SDL_BLENDMODE_BLEND);
 	return true;
 }
 void Window_destroy(Window* window){SDL_DestroyRenderer(window->renderer);SDL_DestroyWindow(window->window);window->renderer=NULL;window->window=NULL;}
@@ -264,6 +268,24 @@ void Camera_render(Camera* cam, Map* map, Asset* assets){
 		}
 	}
 }
+void Camera_render_debug_colls(Camera* cam, Map* map){
+	for(int i=0; i<map->chunkSize; i++){
+		int chunkX=map->chunks[i].x*16, chunkY=map->chunks[i].y*16;
+		if(Vector2_distance_square(cam->pos,(Vector2){(float)chunkX*GRID_SIZE,(float)chunkY*GRID_SIZE}) >= square((float)cam->win->size.x*1.5f)) continue;
+		for(int u=0; u<256; u++){
+			if(map->chunks[i].colls[u] == 0) continue;
+			int x=(chunkX+u%16-8)*GRID_SIZE, y=(chunkY+u/16-8)*GRID_SIZE;
+			SDL_Rect cr = coll_shapes[map->chunks[i].colls[u]-1];
+			SDL_Rect r = (SDL_Rect){
+				x+cr.x+cam->win->hsize.x-(int)cam->pos.x,
+				y+cr.y+cam->win->hsize.y-(int)cam->pos.y,
+				cr.w,cr.h
+			};
+			Window_setColor(cam->win,(SDL_Color){0,0,255,150});
+			SDL_RenderFillRect(cam->win->renderer,&r);
+		}
+	}
+}
 Vector2 Camera_getGlobalMousePos(Camera* cam, Vec2 mousePos){
 	return (Vector2){cam->pos.x+(float)mousePos.x-(float)cam->win->hsize.x,cam->pos.y+(float)mousePos.y-(float)cam->win->hsize.y};
 }
@@ -302,20 +324,35 @@ void Map_add(Map* map){
 	if(map->chunkSize == 1) map->chunks=(MapChunk*)malloc(sizeof(MapChunk)*map->chunkSize);
 	else map->chunks=(MapChunk*)realloc(map->chunks,sizeof(MapChunk)*map->chunkSize);
 }
-void Map_remove(Map* map, uint8_t index){}
 int Map_getChunk(Map* map, int8_t x, int8_t y){
 	for(int i=0;i<map->chunkSize;i++){if(map->chunks[i].x == x && map->chunks[i].y == y) return i;}
 	return -1;
 }
 // ---
-const uint8_t COLL_FULL=0,COLL_LEFT=1,COLL_RIGHT=2,COLL_UP=3,COLL_DOWN=4,COLL_LEFT_UP=5,COLL_RIGHT_UP=6,COLL_LEFT_DOWN=7,COLL_RIGHT_DOWN=8;
-const SDL_Rect collShapes[9]={
-(SDL_Rect){0,0,GRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,GRID_SIZE},
-(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,GRID_SIZE,HGRID_SIZE},
-(SDL_Rect){0,HGRID_SIZE,GRID_SIZE,HGRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,HGRID_SIZE},
-(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,HGRID_SIZE},(SDL_Rect){0,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE},
-(SDL_Rect){HGRID_SIZE,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE}
-};
+
+// Collision functions
+bool Coll_check_rect(Vector2 pos, Vector2 size, Map* map){ // Returns the distance to move to get out of the colliding rectangles
+	int left_gridX=(int)floor((double)(pos.x-size.x/2.0f)/(double)GRID_SIZE), right_gridX=(int)floor((double)(pos.x+size.x/2.0f)/(double)GRID_SIZE);
+	int up_gridY=(int)floor((double)(pos.y-size.y/2.0f)/(double)GRID_SIZE), down_gridY=(int)floor((double)(pos.y+size.y/2.0f)/(double)GRID_SIZE);
+	Vec2 ps[4]={(Vec2){left_gridX,up_gridY},(Vec2){left_gridX,down_gridY},(Vec2){right_gridX,up_gridY},(Vec2){right_gridX,down_gridY}};
+	for(int i=0;i<4;i++){
+		if(i>0 && (ps[i-1].x==ps[i].x && ps[i-1].y==ps[i].y)) continue;
+		int chunkX=(int)floor((double)ps[i].x/16.0d), chunkY=(int)floor((double)ps[i].y/16.0d);
+		int mapIndex=Map_getChunk(map,chunkX,chunkY);
+		if(mapIndex != -1){
+			uint8_t chunk_index=(ps[i].y-chunkY*16)*16+(ps[i].x-chunkX*16);
+			if(map->chunks[mapIndex].colls[chunk_index] == 0) continue;
+			uint8_t coll_index=map->chunks[mapIndex].colls[chunk_index]-1;
+			SDL_Rect coll_r=(SDL_Rect){coll_shapes[coll_index].x+ps[i].x*GRID_SIZE,coll_shapes[coll_index].y+ps[i].y*GRID_SIZE,coll_shapes[coll_index].w,coll_shapes[coll_index].h};
+			Vector2 coll_dist=Vector2_diff(pos,(Vector2){(float)coll_r.x+(float)coll_r.w/2.0f,(float)coll_r.y+(float)coll_r.h/2.0f});
+			if(coll_dist.x <= (float)coll_r.w/2.0f+size.x/2.0f && coll_dist.y <= (float)coll_r.h/2.0f+size.y/2.0f){
+				return true;
+			}
+		}
+	}
+	return false;
+}
+// ---
 
 // Other universal utilities
 void loadMapAssets(Window* win,

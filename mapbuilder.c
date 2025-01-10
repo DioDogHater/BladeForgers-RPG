@@ -135,7 +135,7 @@ int main(int argv, char* args[]){
 						break;
 					}case SDLK_f:
 						layer_selection++;
-						if(layer_selection > 1) layer_selection=0;
+						if(layer_selection > 2) layer_selection=0;
 						curr_select=0;
 						printf("Switching asset type to %d\n",layer_selection);
 						break;
@@ -169,6 +169,9 @@ int main(int argv, char* args[]){
 							int8_t gridX=(event.button.x-800)/100, gridY=(event.button.y-scroll_offset)/100;
 							if(gridX >= 0 && gridX < 2 && gridY >= 0 && gridY*2+gridX < MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_select=(uint8_t)(gridY*2+gridX);
 							else if(gridY*2+gridX == MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_select=MAP_ASSET_COUNT-MAP_STONE_FLOOR_END;
+						}else if(layer_selection == 2){
+							int8_t gridX=(event.button.x-800)/50, gridY=(event.button.y-scroll_offset)/50;
+							if(gridX >= 0 && gridX < 4 && gridY >= 0 && gridY*4+gridX <= COLL_RIGHT_DOWN) curr_select=(uint8_t)(gridY*4+gridX);
 						}
 					}else{
 						Vector2 global_mspos = Camera_getGlobalMousePos(&cam,(Vec2){event.button.x,event.button.y});
@@ -183,6 +186,9 @@ int main(int argv, char* args[]){
 							}else if(layer_selection == 1){
 								if(curr_select == MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_map.chunks[mapIndex].blocks[chunk_index]=MAP_NULL;
 								else curr_map.chunks[mapIndex].blocks[chunk_index]=curr_select;
+							}else if(layer_selection == 2){
+								if(curr_select < COLL_RIGHT_DOWN) curr_map.chunks[mapIndex].colls[chunk_index]=curr_select+1;
+								else curr_map.chunks[mapIndex].colls[chunk_index]=0;
 							}
 						}
 					}
@@ -195,7 +201,7 @@ int main(int argv, char* args[]){
 				if(dragging_mouse){cam.pos.x-=(float)event.motion.xrel;cam.pos.y-=(float)event.motion.yrel;}
 				if(event.motion.x >= 800){mouse_grid_hover=(SDL_Rect){0,0,0,0}; break;}
 				Vector2 global_mspos = Camera_getGlobalMousePos(&cam,(Vec2){event.motion.x,event.motion.y});
-				int gridX=(int)floor((double)global_mspos.x/(double)GRID_SIZE), gridY=(int)floor((double)(global_mspos.y+GRID_SIZE)/(double)GRID_SIZE)-1;
+				int gridX=(int)floor((double)global_mspos.x/(double)GRID_SIZE), gridY=(int)floor((double)(global_mspos.y)/(double)GRID_SIZE);
 				mouse_grid_hover=Camera_rect_render(&cam,gridX,gridY);
 				break;
 			case SDL_MOUSEWHEEL:
@@ -210,10 +216,11 @@ int main(int argv, char* args[]){
 		// Render the map
 		cam.pos=addVector2(cam.pos,scaleVector2(Vector2_normalized(camVel),(float)deltaTime*0.75f));
 		Camera_render(&cam,&curr_map,map_assets);
+		if(layer_selection == 2) Camera_render_debug_colls(&cam,&curr_map);
 		
 		// Render the white hover square when we are hovering a block
 		Window_setColor(&win,(SDL_Color){255,255,255,255});
-		SDL_RenderDrawRect(win.renderer,&mouse_grid_hover); 
+		SDL_RenderDrawRect(win.renderer,&mouse_grid_hover);
 		
 		// Render the block options
 		SDL_Rect r=(SDL_Rect){800,0,200,800};
@@ -224,14 +231,26 @@ int main(int argv, char* args[]){
 			for(int i=0;i<MAP_STONE_FLOOR_END;i++){
 				r=(SDL_Rect){800+(i%5)*40,i/5*40+scroll_offset,40,40};
 				Asset_render(&win,map_assets[i],r);
+				if(i+1 == MAP_STONE_FLOOR_END){Window_setColor(&win,(SDL_Color){255,255,255,255});SDL_RenderDrawRect(win.renderer,&r);}
 				if(i == curr_select){Window_setColor(&win,(SDL_Color){255,0,0,255});SDL_RenderDrawRect(win.renderer,&r);}
 			}
 		}else if(layer_selection == 1){
 			for(int i=MAP_STONE_FLOOR_END;i<=MAP_ASSET_COUNT;i++){
 				r=(SDL_Rect){800+((i-MAP_STONE_FLOOR_END)%2)*100,(i-MAP_STONE_FLOOR_END)/2*100+scroll_offset,100,100};
-				if(i < MAP_ASSET_COUNT){
-					Asset_render(&win,map_assets[i],r);
-				}if(i-MAP_STONE_FLOOR_END == curr_select){Window_setColor(&win,(SDL_Color){255,0,0,255});SDL_RenderDrawRect(win.renderer,&r);}
+				if(i < MAP_ASSET_COUNT) Asset_render(&win,map_assets[i],r);
+				else{Window_setColor(&win,(SDL_Color){255,255,255,255});SDL_RenderDrawRect(win.renderer,&r);}
+				if(i-MAP_STONE_FLOOR_END == curr_select){Window_setColor(&win,(SDL_Color){255,0,0,255});SDL_RenderDrawRect(win.renderer,&r);}
+			}
+		}else if(layer_selection == 2){
+			for(int i=0;i<=COLL_RIGHT_DOWN;i++){
+				SDL_Rect cr=coll_shapes[i]; SDL_Rect r;
+				if(i < COLL_RIGHT_DOWN){
+					r=(SDL_Rect){cr.x/HGRID_SIZE*25+800+(i%4)*50,cr.y/HGRID_SIZE*25+(i/4)*50+scroll_offset,cr.w/HGRID_SIZE*25,cr.h/HGRID_SIZE*25};
+					Window_setColor(&win,(SDL_Color){0,0,255,150});
+					SDL_RenderFillRect(win.renderer,&r);
+				}r=(SDL_Rect){800+(i%4)*50,(i/4)*50+scroll_offset,50,50};
+				Window_setColor(&win, i == curr_select ? (SDL_Color){255,0,0,255}:(SDL_Color){255,255,255,255});
+				SDL_RenderDrawRect(win.renderer,&r);
 			}
 		}
 		
