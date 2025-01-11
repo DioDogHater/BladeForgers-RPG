@@ -57,6 +57,7 @@ void loadMedia(){
 void freeEverything(){
 	Animation_free(&A_player_idle);
 	Animation_free(&A_player_walk);
+	Animation_free(&A_player_swing);
 	Texture_free(&T_grass_tileset);
 	Texture_free(&T_stone_tileset);
 	Texture_free(&T_wall_tileset);

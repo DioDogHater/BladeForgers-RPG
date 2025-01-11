@@ -207,7 +207,11 @@ void Text_free(Text* text){
 	SDL_DestroyTexture(text->t);
 	text->size = (Vec2){0,0};
 }
+void Text_free_t(Text* text){
+	SDL_DestroyTexture(text->t);
+}
 bool Text_load(Window* win, Text* text, char* contents, SDL_Color color){
+	if(text->t != NULL) Text_free_t(text);
 	SDL_Surface* loadedSurface = TTF_RenderText_Solid(text->font,contents,color);
 	if(loadedSurface == NULL){
 		printf("TTF_RenderText_Solid error: %s\n",TTF_GetError());

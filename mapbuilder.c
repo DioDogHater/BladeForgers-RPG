@@ -266,5 +266,8 @@ int main(int argv, char* args[]){
 		Window_update(&win);
 	}
 	
+	free(curr_map.chunks);
+	freeEverything();
+	
 	return 0;
 }
