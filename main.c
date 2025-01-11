@@ -186,7 +186,7 @@ int main(int argv, char* args[]){
 		Camera_render(&cam,&mainmap,map_assets);
 		
 		// Render colliders as a debug feature
-		Camera_render_debug_colls(&cam,&mainmap);
+		//Camera_render_debug_colls(&cam,&mainmap);
 		
 		// Render player
 		Texture_render(&win,&T_shadow,(SDL_Rect){win.hsize.x-(int)((float)HGRID_SIZE*0.75f),win.hsize.y-(int)((float)HGRID_SIZE*0.4f),(int)((float)GRID_SIZE*0.75f),(int)((float)GRID_SIZE*0.75f)});
@@ -198,9 +198,9 @@ int main(int argv, char* args[]){
 		Text_render_scaled(&win,&TXT_fpsCounter,(Vec2){0,0},(Vector2){1.0f,1.0f});
 		
 		// Render the player's collider
-		SDL_Rect r=(SDL_Rect){win.hsize.x-(int)(pl_coll_size.x/2.0f),win.hsize.y-(int)(pl_coll_size.y/2.0f-(pl_coll_pos.y-GRID_SIZE*8)),(int)pl_coll_size.x,(int)pl_coll_size.y};
-		Window_setColor(&win,(SDL_Color){255,255,255,255});
-		SDL_RenderDrawRect(win.renderer,&r);
+		//SDL_Rect r=(SDL_Rect){win.hsize.x-(int)(pl_coll_size.x/2.0f),win.hsize.y-(int)(pl_coll_size.y/2.0f-(pl_coll_pos.y-GRID_SIZE*8)),(int)pl_coll_size.x,(int)pl_coll_size.y};
+		//Window_setColor(&win,(SDL_Color){255,255,255,255});
+		//SDL_RenderDrawRect(win.renderer,&r);
 		
 		// Update the current window display (Show everything rendered)
 		Window_update(&win);
