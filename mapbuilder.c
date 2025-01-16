@@ -65,7 +65,7 @@ int main(int argv, char* args[]){
 	// Time management
 	Uint32 nowTick=0, lastTick=SDL_GetTicks();
 	Uint64 NOW=SDL_GetPerformanceCounter(), LAST=0;
-	double deltaTime = 0.0d;
+	double deltaTime = 0.0;
 	
 	// Camera used to render map
 	Vector2 camVel=(Vector2){0.0f,0.0f};
@@ -93,7 +93,7 @@ int main(int argv, char* args[]){
 		
 		// Update FPS counter in the upper left corner
 		char TXT_fpsCount[12];
-		sprintf(TXT_fpsCount,"%.1f FPS",1000.0d/deltaTime);
+		sprintf(TXT_fpsCount,"%.1f FPS",1000.0/deltaTime);
 		Text_load(&win,&TXT_fpsCounter,TXT_fpsCount,(SDL_Color){255,255,255,255});
 		
 		// Event handling
@@ -171,12 +171,12 @@ int main(int argv, char* args[]){
 							else if(gridY*2+gridX == MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_select=MAP_ASSET_COUNT-MAP_STONE_FLOOR_END;
 						}else if(layer_selection == 2){
 							int8_t gridX=(event.button.x-800)/50, gridY=(event.button.y-scroll_offset)/50;
-							if(gridX >= 0 && gridX < 4 && gridY >= 0 && gridY*4+gridX <= COLL_RIGHT_DOWN) curr_select=(uint8_t)(gridY*4+gridX);
+							if(gridX >= 0 && gridX < 4 && gridY >= 0 && gridY*4+gridX <= COLL_SHAPE_LEN) curr_select=(uint8_t)(gridY*4+gridX);
 						}
 					}else{
 						Vector2 global_mspos = Camera_getGlobalMousePos(&cam,(Vec2){event.button.x,event.button.y});
 						int gridX=(int)floor((double)global_mspos.x/(double)GRID_SIZE)+8, gridY=(int)floor((double)(global_mspos.y)/(double)GRID_SIZE)+8;
-						int chunkX=(int)floor((double)gridX/16.0d), chunkY=(int)floor((double)gridY/16.0d);
+						int chunkX=(int)floor((double)gridX/16.0), chunkY=(int)floor((double)gridY/16.0);
 						int mapIndex = Map_getChunk(&curr_map,chunkX,chunkY);
 						if(mapIndex != -1){
 							gridX-=chunkX*16; gridY-=chunkY*16;
@@ -187,7 +187,7 @@ int main(int argv, char* args[]){
 								if(curr_select == MAP_ASSET_COUNT-MAP_STONE_FLOOR_END) curr_map.chunks[mapIndex].blocks[chunk_index]=MAP_NULL;
 								else curr_map.chunks[mapIndex].blocks[chunk_index]=curr_select;
 							}else if(layer_selection == 2){
-								if(curr_select < COLL_RIGHT_DOWN) curr_map.chunks[mapIndex].colls[chunk_index]=curr_select+1;
+								if(curr_select < COLL_SHAPE_LEN) curr_map.chunks[mapIndex].colls[chunk_index]=curr_select+1;
 								else curr_map.chunks[mapIndex].colls[chunk_index]=0;
 							}
 						}
@@ -242,10 +242,15 @@ int main(int argv, char* args[]){
 				if(i-MAP_STONE_FLOOR_END == curr_select){Window_setColor(&win,(SDL_Color){255,0,0,255});SDL_RenderDrawRect(win.renderer,&r);}
 			}
 		}else if(layer_selection == 2){
-			for(int i=0;i<=COLL_RIGHT_DOWN;i++){
+			for(int i=0;i<=COLL_SHAPE_LEN;i++){
 				SDL_Rect cr=coll_shapes[i]; SDL_Rect r;
-				if(i < COLL_RIGHT_DOWN){
-					r=(SDL_Rect){cr.x/HGRID_SIZE*25+800+(i%4)*50,cr.y/HGRID_SIZE*25+(i/4)*50+scroll_offset,cr.w/HGRID_SIZE*25,cr.h/HGRID_SIZE*25};
+				if(i < COLL_SHAPE_LEN){
+					r=(SDL_Rect){
+						(int)((float)cr.x/(float)HGRID_SIZE*25.0f)+800+(i%4)*50,
+						(int)((float)cr.y/(float)HGRID_SIZE*25.0f)+(i/4)*50+scroll_offset,
+						(int)((float)cr.w/(float)HGRID_SIZE*25.0f),
+						(int)((float)cr.h/(float)HGRID_SIZE*25.0f)
+					};
 					Window_setColor(&win,(SDL_Color){0,0,255,150});
 					SDL_RenderFillRect(win.renderer,&r);
 				}r=(SDL_Rect){800+(i%4)*50,(i/4)*50+scroll_offset,50,50};

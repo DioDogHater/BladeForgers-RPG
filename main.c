@@ -115,7 +115,7 @@ int main(int argv, char* args[]){
 		deltaTime=(double)((NOW-LAST)*1000 / (double)SDL_GetPerformanceFrequency());
 		
 		char TXT_fpsCounter_text[10];
-		sprintf(TXT_fpsCounter_text,"%.1f FPS",1000.0d/deltaTime);
+		sprintf(TXT_fpsCounter_text,"%.1f FPS",1000.0/deltaTime);
 		Text_load(&win,&TXT_fpsCounter,TXT_fpsCounter_text,(SDL_Color){255,255,255,255});
 		
 		// Event handling

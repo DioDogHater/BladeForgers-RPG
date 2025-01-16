@@ -85,13 +85,17 @@ typedef struct {
 }Animation;
 
 // Collision Constants
-const uint8_t COLL_FULL=1,COLL_LEFT=2,COLL_RIGHT=3,COLL_UP=4,COLL_DOWN=5,COLL_LEFT_UP=6,COLL_RIGHT_UP=7,COLL_LEFT_DOWN=8,COLL_RIGHT_DOWN=9;
-const SDL_Rect coll_shapes[9]={
+const uint8_t COLL_FULL=1,COLL_LEFT=2,COLL_RIGHT=3,COLL_UP=4,COLL_DOWN=5,COLL_LEFT_UP=6,COLL_RIGHT_UP=7,COLL_LEFT_DOWN=8,COLL_RIGHT_DOWN=9,
+	COLL_BORDER_LEFT=10,COLL_BORDER_RIGHT=11,COLL_BORDER_UP=12,COLL_BORDER_DOWN=13;
+#define COLL_SHAPE_LEN 14
+const SDL_Rect coll_shapes[COLL_SHAPE_LEN]={
 	(SDL_Rect){0,0,GRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,GRID_SIZE},
 	(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,GRID_SIZE},(SDL_Rect){0,0,GRID_SIZE,HGRID_SIZE},
 	(SDL_Rect){0,HGRID_SIZE,GRID_SIZE,HGRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE,HGRID_SIZE},
 	(SDL_Rect){HGRID_SIZE,0,HGRID_SIZE,HGRID_SIZE},(SDL_Rect){0,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE},
-	(SDL_Rect){HGRID_SIZE,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE}
+	(SDL_Rect){HGRID_SIZE,HGRID_SIZE,HGRID_SIZE,HGRID_SIZE},(SDL_Rect){0,0,HGRID_SIZE/5,GRID_SIZE},
+	(SDL_Rect){GRID_SIZE-HGRID_SIZE/5,0,HGRID_SIZE/5,GRID_SIZE},(SDL_Rect){0,0,GRID_SIZE,HGRID_SIZE/5},
+	(SDL_Rect){0,GRID_SIZE-HGRID_SIZE/5,GRID_SIZE,HGRID_SIZE/5}
 };
 
 // Math functions
@@ -192,7 +196,7 @@ void Asset_render(Window* win, Asset asset, SDL_Rect r){
 	Texture_render_clip(win,asset.t,r,asset.clip);
 }
 void Asset_renderEx(Window* win, Asset asset, SDL_Rect r, SDL_RendererFlip flip){
-	Texture_render_clipEx(win,asset.t,r,asset.clip,0.0d,NULL,flip);
+	Texture_render_clipEx(win,asset.t,r,asset.clip,0.0,NULL,flip);
 }
 // ---
 
@@ -341,7 +345,7 @@ bool Coll_check_rect(Vector2 pos, Vector2 size, Map* map){ // Returns the distan
 	Vec2 ps[4]={(Vec2){left_gridX,up_gridY},(Vec2){left_gridX,down_gridY},(Vec2){right_gridX,up_gridY},(Vec2){right_gridX,down_gridY}};
 	for(int i=0;i<4;i++){
 		if(i>0 && (ps[i-1].x==ps[i].x && ps[i-1].y==ps[i].y)) continue;
-		int chunkX=(int)floor((double)ps[i].x/16.0d), chunkY=(int)floor((double)ps[i].y/16.0d);
+		int chunkX=(int)floor((double)ps[i].x/16.0), chunkY=(int)floor((double)ps[i].y/16.0);
 		int mapIndex=Map_getChunk(map,chunkX,chunkY);
 		if(mapIndex != -1){
 			uint8_t chunk_index=(ps[i].y-chunkY*16)*16+(ps[i].x-chunkX*16);
